@@ -1,0 +1,34 @@
+// {
+//   "compilerOptions": {
+//     "module": "commonjs",
+//     "target": "ES2020",
+//     "types": [],
+//     "sourceMap": true,
+//     "declaration": true,
+//     "declarationMap": true,
+//     "noUncheckedIndexedAccess": true,
+//     "exactOptionalPropertyTypes": true,
+//     "strict": true,
+//     "jsx": "react-jsx",
+//     "verbatimModuleSyntax": false,
+//     "isolatedModules": true,
+//     "noUncheckedSideEffectImports": true,
+//     "moduleDetection": "force",
+//     "skipLibCheck": true,
+//     "esModuleInterop": true
+//   }
+// }
+
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "rootDir": "src",
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}

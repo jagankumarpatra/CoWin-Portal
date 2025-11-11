@@ -1,0 +1,32 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: jagan2002
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: awsapp2002
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: VaccinePortal
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  # Uncomment to easily set up a custom domain. Read the docs for more details:
+  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
+  # domain: api.example.com
+
+functions:
+  registerUser:
+    handler: dist/controllers/UserController.registerUser
+    events:
+      - httpApi:
+          path: /register
+          method: post
+          
+  loginUser:
+    handler: dist/controllers/UserController.loginUser
+    events:
+      - httpApi:
+          path: /login
+          method: post
+          
+
+plugins:
+  - serverless-offline
