@@ -19,8 +19,8 @@ export interface UserModel {
     age:number,
     pincode:number,
     aadharNumber:number,
-    isAdmin?:Boolean,
-    doseHistory?:DoseModel,
-    vaccinationStatus?:VaccinationStatus,
-    bookedSlot?:number
+    isAdmin:Boolean,
+    doseHistory?:DoseModel[],
+    vaccinationStatus:VaccinationStatus,
+    bookedSlot:string | null
 }

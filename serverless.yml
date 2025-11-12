@@ -26,7 +26,48 @@ functions:
       - httpApi:
           path: /login
           method: post
-          
+
+  getProfile:
+    handler: dist/controllers/UserController.getProfile
+    events:
+      - httpApi:
+          path: /getProfile
+          method: post
+            
+  bookSlot:
+    handler: dist/controllers/UserController.bookSlot
+    events:
+      - httpApi:
+          path: /bookSlot
+          method: post
+
+  addSlot:
+    handler: dist/controllers/AdminController.addSlot
+    events:
+      - httpApi:
+          path: /addSlot
+          method: post
+
+  getSlots:
+    handler: dist/controllers/AdminController.getSlots
+    events:
+      - httpApi:
+          path: /getSlots
+          method: get
+
+  getAllBookings:
+    handler: dist/controllers/AdminController.getAllBookings
+    events:
+      - httpApi:
+          path: /getAllBookings
+          method: get
+
+  getFilteredData:
+    handler: dist/controllers/AdminController.getFilteredData
+    events:
+      - httpApi:
+          path: /getFilteredData
+          method: get
 
 plugins:
   - serverless-offline

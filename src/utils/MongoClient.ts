@@ -11,3 +11,14 @@ export const dbConnect=async()=>{
         console.log("Error in DB Connection",error);
     }
 }
+export const slotdbConnect=async()=>{
+    try {
+        await client.connect();
+        const myDB=client.db("VaccineDatabase");
+        const slotData=myDB.collection("slots");
+        console.log("DB Connected Successfully");
+        return slotData;
+    } catch (error) {
+        console.log("Error in DB Connection",error);
+    }
+}
