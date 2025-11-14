@@ -1,8 +1,8 @@
 import { ObjectId } from "mongodb";
 import { UserModel, VaccinationStatus } from "../models/UserModel";
-import { dbConnect, slotdbConnect } from "../utils/MongoClient";
+import { dbConnect, slotdbConnect } from "../dbConnection/MongoClient";
 import { loginValidator, profileValidator, registerValidator, slotValidator } from '../validator/UserSchemaValidator';
-import { ResponseFormat } from "../responseFormat";
+import { ResponseFormat } from "../utils/responseFormat";
 export const init = async () => {
     const db = await dbConnect();
     if (db) {

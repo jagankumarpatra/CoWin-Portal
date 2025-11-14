@@ -10,5 +10,5 @@ var VaccinationStatus;
 (function (VaccinationStatus) {
     VaccinationStatus["None"] = "none";
     VaccinationStatus["FirstDose"] = "first-dose-completeed";
-    VaccinationStatus["SecondDose"] = "second-dose-completed";
+    VaccinationStatus["AllDose"] = "all-dose-completed";
 })(VaccinationStatus || (exports.VaccinationStatus = VaccinationStatus = {}));

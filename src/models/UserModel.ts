@@ -5,7 +5,7 @@ export enum DoseType{
 export enum VaccinationStatus{
     None="none",
     FirstDose="first-dose-completeed",
-    SecondDose="second-dose-completed"
+    AllDose="all-dose-completed"
 }
 export interface DoseModel {
     dose:DoseType,

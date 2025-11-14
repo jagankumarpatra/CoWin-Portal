@@ -3,9 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.bookSlot = exports.getProfile = exports.loginUser = exports.registerUser = exports.init = void 0;
 const mongodb_1 = require("mongodb");
 const UserModel_1 = require("../models/UserModel");
-const MongoClient_1 = require("../utils/MongoClient");
+const MongoClient_1 = require("../dbConnection/MongoClient");
 const UserSchemaValidator_1 = require("../validator/UserSchemaValidator");
-const responseFormat_1 = require("../responseFormat");
+const responseFormat_1 = require("../utils/responseFormat");
 const init = async () => {
     const db = await (0, MongoClient_1.dbConnect)();
     if (db) {

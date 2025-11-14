@@ -1,6 +1,6 @@
 import { Search } from "../models/searchModel";
-import { ResponseFormat } from "../responseFormat";
-import { slotdbConnect, dbConnect } from "../utils/MongoClient";
+import { ResponseFormat } from "../utils/responseFormat";
+import { slotdbConnect, dbConnect } from "../dbConnection/MongoClient";
 import { addSlotValidate, filteredData } from "../validator/AdminSchemaValidator";
 export const addSlot = async (event: any) => {
     try {

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFilteredData = exports.getAllBookings = exports.getSlots = exports.addSlot = void 0;
-const responseFormat_1 = require("../responseFormat");
-const MongoClient_1 = require("../utils/MongoClient");
+const responseFormat_1 = require("../utils/responseFormat");
+const MongoClient_1 = require("../dbConnection/MongoClient");
 const AdminSchemaValidator_1 = require("../validator/AdminSchemaValidator");
 const addSlot = async (event) => {
     try {

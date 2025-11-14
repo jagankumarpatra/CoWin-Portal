@@ -34,12 +34,12 @@ functions:
           path: /getProfile
           method: post
             
-  bookSlot:
-    handler: dist/controllers/UserController.bookSlot
-    events:
-      - httpApi:
-          path: /bookSlot
-          method: post
+  # bookSlot:
+  #   handler: dist/controllers/UserController.bookSlot
+  #   events:
+  #     - httpApi:
+  #         path: /bookSlot
+  #         method: post
 
   addSlot:
     handler: dist/controllers/AdminController.addSlot
@@ -76,5 +76,31 @@ functions:
           path: /viewSlot
           method: get
 
+  BookSlot:
+    handler: dist/controllers/SlotController.BookSlot
+    events:
+      - httpApi:
+          path: /BookSlot
+          method: post
+
+  userSlotBooking:
+    handler: dist/controllers/SlotController.userSlotBooking
+    events:
+      - httpApi:
+          path: /userSlotBooking
+          method: get
+
+  cancelSlot:
+    handler: dist/controllers/SlotController.cancelSlot
+    events:
+      - httpApi:
+          path: /cancelSlot
+          method: get
+
+  UpdateVaccinationStatusCron:
+    handler: dist/cron/markVaccinated.UpdateVaccinationStatusCron
+    events:
+      - schedule:
+          rate: rate(2 minutes)
 plugins:
   - serverless-offline

@@ -7,7 +7,14 @@ export const validateSlot = Joi.object({
 
 export const slotBookingValidator=Joi.object({
     mobile: Joi.string().length(10).required(),
-    type : Joi.number().valid(1,2).required(),
+    doseType : Joi.number().valid(1,2).required(),
     slotId: Joi.string().max(30).required(),
+})
 
+export const mybooking=Joi.object({
+    mobile: Joi.string().length(10).required(),
+})
+
+export const cancelBooking=Joi.object({
+    mobile: Joi.string().length(10).required()
 })
