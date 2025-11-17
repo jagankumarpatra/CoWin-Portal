@@ -15,12 +15,13 @@ export interface DoseModel {
 export interface UserModel {
     name:String,
     mobile:String,
-    password:String,
+    password?:String,
     age:number,
     pincode:number,
     aadharNumber:number,
     isAdmin?:Boolean,
     doseHistory?:DoseModel[],
     vaccinationStatus?:VaccinationStatus,
-    bookedSlot?:string | null
+    bookedSlot?:string | null,
+    subId:string
 }

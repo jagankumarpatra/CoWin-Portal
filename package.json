@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@joi/date": "^2.1.1",
+    "aws-jwt-verify": "^5.1.1",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "joi": "^18.0.1",
@@ -20,7 +21,7 @@
     "nodemon": "^3.1.10"
   },
   "devDependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.928.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.932.0",
     "@types/express": "^5.0.5",
     "serverless-offline": "^14.4.0"
   }

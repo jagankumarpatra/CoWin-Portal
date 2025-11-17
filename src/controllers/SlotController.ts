@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { ResponseFormat } from "../utils/responseFormat";
 import { cancelBooking, mybooking, slotBookingValidator, validateSlot } from "../validator/SlotSchemaValidator";
 import { slotdbConnect, dbConnect } from "../dbConnection/MongoClient";

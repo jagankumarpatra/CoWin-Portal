@@ -1,6 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFilteredData = exports.getAllBookings = exports.getSlots = exports.addSlot = void 0;
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const responseFormat_1 = require("../utils/responseFormat");
 const MongoClient_1 = require("../dbConnection/MongoClient");
 const AdminSchemaValidator_1 = require("../validator/AdminSchemaValidator");

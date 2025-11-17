@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { Search } from "../models/searchModel";
 import { ResponseFormat } from "../utils/responseFormat";
 import { slotdbConnect, dbConnect } from "../dbConnection/MongoClient";
