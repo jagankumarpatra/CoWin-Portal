@@ -2,11 +2,11 @@ import dotenv from "dotenv";
 dotenv.config();
 import { ObjectId } from "mongodb";
 import { UserModel, VaccinationStatus } from "../models/UserModel";
-import { dbConnect, slotdbConnect } from "../dbConnection/MongoClient";
-import { loginValidator, profileValidator, registerValidator, slotValidator } from '../validator/UserSchemaValidator';
+import { dbConnect } from "../dbConnection/MongoClient";
+import { loginValidator, registerValidator } from '../validator/UserSchemaValidator';
 import { ResponseFormat } from "../utils/responseFormat";
 import { AdminConfirmSignUpCommand, AdminInitiateAuthCommand, CognitoIdentityProviderClient, InitiateAuthCommand, SignUpCommand } from "@aws-sdk/client-cognito-identity-provider";
-import {  tokenValidation, verifier } from "../middleware/auth";
+import { tokenValidation, verifier } from "../middleware/auth";
 
 const client = new CognitoIdentityProviderClient({ region: "us-east-1" });
 export const init = async () => {
@@ -45,7 +45,7 @@ export const registerUser = async (event: any) => {
         }));
 
         const authCommand = new AdminInitiateAuthCommand({
-            UserPoolId:process.env.USER_POOL_ID,
+            UserPoolId: process.env.USER_POOL_ID,
             ClientId: process.env.CLIENT_ID,
             AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
             AuthParameters: {
@@ -118,7 +118,7 @@ export const loginUser = async (event: any) => {
             const existingUser = await db!.findOne({ mobile });
             if (!existingUser) {
                 return ResponseFormat(400, "User Not found with this mobile number");
-            }        
+            }
             return ResponseFormat(200, "User Information", {
                 accessToken: accessToken,
                 _id: existingUser?._id,
@@ -134,72 +134,23 @@ export const loginUser = async (event: any) => {
 }
 export const getProfile = async (event: any) => {
     try {
-        const payloadSubId=await tokenValidation(event);
-        console.log("Sub ID from token payload:", payloadSubId);
-        const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-        const { mobile } = body;
+        const checkAuth = await tokenValidation(event);
+        const token = event.headers.Authorization?.split(" ")[1];
+        if (checkAuth !== 1) {
+            return ResponseFormat(401, "Unauthorized: Invalid token");
+        }
+        const payload = await verifier.verify(token);
+        const payLoadSubId = payload.sub;
         const db = await dbConnect();
-        const dbSubId = await db!.findOne({ mobile });
+        const dbSubId = await db!.findOne({ "subId": payLoadSubId });
         console.log("User sub from token payload:", dbSubId?.subId);
-        const validateProfile = profileValidator.validate(body);
-        console.log(validateProfile);
-        if (validateProfile.error) {
-            return ResponseFormat(400, "Validation Format error", validateProfile.error.message);
-        }
-        const userProfile = await db!.findOne({ mobile });
-        if (!userProfile) {
-            console.log("User not exists in db");
-            return ResponseFormat(400, "User not found with this mobile number");
-
-        }
-        if (payloadSubId !== dbSubId?.subId) {
-            return ResponseFormat(401, "Unauthorized: Invalid token for this user");
-        }
         return ResponseFormat(200, "Profile Information", {
-            _id: userProfile?._id,
-            name: userProfile?.name,
-            mobile: userProfile?.mobile,
+            _id: dbSubId?._id,
+            name: dbSubId?.name,
+            mobile: dbSubId?.mobile,
         });
-
     } catch (error) {
         console.log("Error in profile api", error);
-        return ResponseFormat(400, "Internal Server Error", error);
-    }
-}
-
-export const bookSlot = async (event: any) => {
-    try {
-
-        const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-        const { slotId } = body;
-        const db = await slotdbConnect();
-        console.log("SlotId", slotId);
-        const objectId = new ObjectId(slotId);
-        console.log("ObjectId", objectId);
-        const validateSlotId = slotValidator.validate(body);
-        if (validateSlotId.error) {
-            return ResponseFormat(400, "Validation Format error", validateSlotId.error.message);
-        }
-        const checkSLotId = await db?.findOne({ _id: objectId });
-        console.log("checkSLotId", checkSLotId);
-        if (!checkSLotId) {
-            console.log("Slot id is not present in db");
-            return ResponseFormat(400, "slot id not exist in db");
-
-        }
-        await db?.updateOne({
-            _id: objectId
-        },
-            {
-                $inc: {
-                    "availableCapacity": -1
-                }
-            })
-
-        return ResponseFormat(200, "Slot Booked");
-
-    } catch (error) {
-        console.log("Error in bookSlot api", error);
         return ResponseFormat(400, "Internal Server Error", error);
     }
 }

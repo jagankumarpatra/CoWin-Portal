@@ -12,11 +12,3 @@ export const loginValidator = Joi.object({
     mobile: Joi.string().length(10).required(),
     password: Joi.string().pattern(new RegExp('[A-Za-z@1-9]')).required()
 });
-
-export const profileValidator = Joi.object({
-    mobile: Joi.string().length(10).required(),
-})
-
-export const slotValidator = Joi.object({
-    slotId: Joi.string().max(30).required(),
-})

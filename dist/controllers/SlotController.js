@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelSlot = exports.userSlotBooking = exports.BookSlot = exports.viewSlot = void 0;
+exports.BookSlot = exports.cancelSlot = exports.userSlotBooking = exports.viewSlot = exports.connectToDb = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const responseFormat_1 = require("../utils/responseFormat");
@@ -11,9 +11,20 @@ const SlotSchemaValidator_1 = require("../validator/SlotSchemaValidator");
 const MongoClient_1 = require("../dbConnection/MongoClient");
 const UserModel_1 = require("../models/UserModel");
 const mongodb_1 = require("mongodb");
+const auth_1 = require("../middleware/auth");
+const connectToDb = async () => {
+    const slotDb = await (0, MongoClient_1.slotdbConnect)();
+    const userDb = await (0, MongoClient_1.dbConnect)();
+    return { slotDb, userDb };
+};
+exports.connectToDb = connectToDb;
 const viewSlot = async (event) => {
     try {
-        const db = await (0, MongoClient_1.slotdbConnect)();
+        const checkAuth = await (0, auth_1.tokenValidation)(event);
+        if (checkAuth !== 1) {
+            return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid token");
+        }
+        const DB = await (0, exports.connectToDb)();
         const body = event.queryStringParameters?.date;
         console.log("Body", body);
         const dateToValidate = { date: body };
@@ -29,107 +40,83 @@ const viewSlot = async (event) => {
         }
         const slotcheck = validateDate.value;
         console.log("slotcheck", slotcheck);
-        const slotData = await db?.find({ dat1 }).toArray();
+        const slotData = await DB.slotDb?.find({ dat1 }).toArray();
         return (0, responseFormat_1.ResponseFormat)(200, "All slots", slotData);
-    }
-    catch (error) {
-        return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
-    }
-};
-exports.viewSlot = viewSlot;
-const BookSlot = async (event) => {
-    try {
-        const db = await (0, MongoClient_1.dbConnect)();
-        const slotDb = await (0, MongoClient_1.slotdbConnect)();
-        const body = typeof event.body == "string" ? JSON.parse(event.body) : event.body;
-        const { mobile, doseType, slotId } = body;
-        const validateUserData = SlotSchemaValidator_1.slotBookingValidator.validate(body);
-        if (validateUserData.error) {
-            return (0, responseFormat_1.ResponseFormat)(400, "Format Error", validateUserData.error);
-        }
-        const existingUser = await db?.findOne({ mobile });
-        if (!existingUser) {
-            return (0, responseFormat_1.ResponseFormat)(400, "User not found");
-        }
-        if (doseType == UserModel_1.DoseType.Two) {
-            if (existingUser.vaccinationStatus !== UserModel_1.VaccinationStatus.FirstDose) {
-                return (0, responseFormat_1.ResponseFormat)(400, "Cannot book 2nd dose before completing 1st dose");
-            }
-        }
-        // if (existingUser.bookedSlot != null) {
-        //     return ResponseFormat(400, "You already have an active booking")
-        // }
-        // slot not found
-        const objectId = new mongodb_1.ObjectId(slotId);
-        const existingSlotId = await slotDb?.findOne({ _id: objectId });
-        console.log(existingSlotId);
-        if (!existingSlotId) {
-            return (0, responseFormat_1.ResponseFormat)(400, "Slot Id not found");
-        }
-        console.log(existingSlotId.availableCapacity);
-        // check slot full or not
-        if (existingSlotId.availableCapacity <= 0) {
-            return (0, responseFormat_1.ResponseFormat)(400, "Slots are full for this id", existingSlotId._id);
-        }
-        // reduce availableCapacity  to 1 of that slot id
-        await slotDb?.updateOne({ _id: existingSlotId._id }, {
-            $inc: { "availableCapacity": -1 }
-        });
-        // update booked count to 1 of that slot id
-        await slotDb?.updateOne({
-            _id: existingSlotId._id
-        }, {
-            $inc: { "bookedCount": +1 }
-        });
-        console.log(await slotDb?.findOne({ _id: objectId }));
-        //  update slotid in bookedslot
-        await db?.updateOne({ mobile: mobile }, {
-            $set: {
-                "bookedSlot": existingSlotId._id
-            }
-        });
-        console.log(await db?.findOne({ mobile: mobile }));
-        // update dosetype, slotid, datein doseHistory
-        await db?.updateOne({ mobile: mobile }, {
-            $push: {
-                doseHistory: {
-                    dose: doseType,
-                    slotId: existingSlotId._id,
-                    date: new Date()
-                }
-            }
-        });
-        console.log(await db?.findOne({ mobile: mobile }));
-        // //1st time slot
-        if (doseType === UserModel_1.DoseType.One) {
-            db?.updateOne({
-                mobile: mobile
-            }, {
-                $set: {
-                    "vaccinationStatus": UserModel_1.VaccinationStatus.FirstDose
-                }
-            });
-        }
-        if (doseType === UserModel_1.DoseType.Two) {
-            db?.updateOne({
-                mobile: mobile
-            }, {
-                $set: {
-                    "vaccinationStatus": UserModel_1.VaccinationStatus.AllDose
-                }
-            });
-        }
-        return (0, responseFormat_1.ResponseFormat)(200, `Dose ${doseType} slot booked successfully for slot ${existingSlotId}`);
     }
     catch (error) {
         console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
     }
 };
-exports.BookSlot = BookSlot;
+exports.viewSlot = viewSlot;
+// export const BookSlot = async (event: any) => {
+//     try {
+//         const checkAuth = await tokenValidation(event);
+//         if (checkAuth !== 1) {
+//             return ResponseFormat(401, "Unauthorized: Invalid token");
+//         }
+//         const DB = await connectToDb();
+//         const body = typeof event.body == "string" ? JSON.parse(event.body) : event.body;
+//         const { mobile, doseType, slotId } = body;
+//         const validateUserData = slotBookingValidator.validate(body);
+//         if (validateUserData.error) {
+//             return ResponseFormat(400, "Format Error", validateUserData.error);
+//         }
+//         const existingUser = await DB.userDb?.findOne({ mobile });
+//         if (!existingUser) {
+//             return ResponseFormat(400, "User not found")
+//         }
+//         if (doseType == DoseType.Two && existingUser.vaccinationStatus !== VaccinationStatus.FirstDose) {
+//             return ResponseFormat(400, "Cannot book 2nd dose before completing 1st dose")
+//         }
+//         // slot not found
+//         const objectId = new ObjectId(slotId);
+//         const existingSlotId = await DB.slotDb?.findOne({ _id: objectId });
+//         console.log(existingSlotId);
+//         if (!existingSlotId) {
+//             return ResponseFormat(400, "Slot Id not found")
+//         }
+//         // check slot full or not
+//         if (existingSlotId.availableCapacity <= 0) {
+//             return ResponseFormat(400, "Slots are full for this id", existingSlotId._id)
+//         }
+//         let vaccineStatus: VaccinationStatus = doseType === DoseType.One
+//             ? VaccinationStatus.FirstDose
+//             : VaccinationStatus.AllDose;
+//         // reduce availableCapacity  to 1 of that slot id
+//         await DB.slotDb?.updateOne({ _id: existingSlotId._id }, {
+//             $inc: {
+//                 "availableCapacity": -1,
+//                 "bookedCount": +1
+//             }
+//         })
+//         //  update slotid in bookedslot
+//         await DB.userDb?.updateOne({ mobile: mobile }, {
+//             $set: {
+//                 "bookedSlot": existingSlotId._id,
+//                 "vaccinationStatus": vaccineStatus
+//             },
+//             $push: {
+//                 doseHistory: {
+//                     dose: doseType,
+//                     slotId: existingSlotId._id,
+//                     date: new Date()
+//                 }
+//             }
+//         } as any)
+//         return ResponseFormat(200, `Dose ${doseType} slot booked successfully for slot ${existingSlotId._id}`)
+//     } catch (error) {
+//         console.log(error);
+//         return ResponseFormat(400, "Something Went Wrong", error);
+//     }
+// }
 const userSlotBooking = async (event) => {
     try {
-        const userDb = await (0, MongoClient_1.dbConnect)();
+        const checkAuth = await (0, auth_1.tokenValidation)(event);
+        if (checkAuth !== 1) {
+            return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid token");
+        }
+        const DB = await (0, exports.connectToDb)();
         const mobile = event.queryStringParameters?.mobile;
         console.log(mobile);
         const obj = { mobile };
@@ -140,7 +127,7 @@ const userSlotBooking = async (event) => {
             console.log(bookData.error);
             return (0, responseFormat_1.ResponseFormat)(400, "Format Error", bookData.error);
         }
-        const existingUser = await userDb?.findOne({ mobile: mobile });
+        const existingUser = await DB.userDb?.findOne({ mobile: mobile });
         console.log(existingUser);
         if (!existingUser?.mobile) {
             return (0, responseFormat_1.ResponseFormat)(400, "User Not Found in DB");
@@ -158,8 +145,11 @@ const userSlotBooking = async (event) => {
 exports.userSlotBooking = userSlotBooking;
 const cancelSlot = async (event) => {
     try {
-        const userDb = await (0, MongoClient_1.dbConnect)();
-        const slotDb = await (0, MongoClient_1.slotdbConnect)();
+        const checkAuth = await (0, auth_1.tokenValidation)(event);
+        if (checkAuth !== 1) {
+            return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid token");
+        }
+        const DB = await (0, exports.connectToDb)();
         const mobile = event.queryStringParameters.mobile;
         const data = { mobile };
         const slotValidate = SlotSchemaValidator_1.cancelBooking.validate(data);
@@ -167,7 +157,7 @@ const cancelSlot = async (event) => {
             console.log(slotValidate.error);
             return (0, responseFormat_1.ResponseFormat)(400, "Format Error", slotValidate.error);
         }
-        const existingUser = await userDb?.findOne({ mobile });
+        const existingUser = await DB.userDb?.findOne({ mobile });
         if (!existingUser) {
             return (0, responseFormat_1.ResponseFormat)(400, "User Not Exists in Db");
         }
@@ -188,24 +178,21 @@ const cancelSlot = async (event) => {
         }
         const slotId = await existingUser.bookedSlot;
         console.log("$$$", slotId);
-        const Info = await slotDb?.findOne({ _id: slotId });
-        if (Info?.availableCapacity <= 0) {
-            return (0, responseFormat_1.ResponseFormat)(400, "Available Capacity Cannot be less than 0");
-        }
-        if (Info?.bookedCount >= 10) {
+        const Info = await DB.slotDb?.findOne({ _id: slotId });
+        if (Info?.bookedCount > 10) {
             return (0, responseFormat_1.ResponseFormat)(400, "Booked Slot Limit is 10");
         }
-        await slotDb?.updateOne({ _id: slotId }, {
-            $inc: { "availableCapacity": -1 }
-        });
-        // update booked count to 1 of that slot id
-        await slotDb?.updateOne({
-            _id: slotId
-        }, {
-            $inc: { "bookedCount": +1 }
+        if (Info?.availableCapacity < 0) {
+            return (0, responseFormat_1.ResponseFormat)(400, "Available Capacity Cannot be less than 0");
+        }
+        await DB.slotDb?.updateOne({ _id: slotId }, {
+            $inc: {
+                "availableCapacity": +1,
+                "bookedCount": -1
+            }
         });
         // remove booked SLot from user db
-        await userDb?.updateOne({
+        await DB.userDb?.updateOne({
             _id: existingUser?._id
         }, {
             $set: {
@@ -215,7 +202,81 @@ const cancelSlot = async (event) => {
         return (0, responseFormat_1.ResponseFormat)(200, "Data Found", existingUser);
     }
     catch (error) {
+        console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
     }
 };
 exports.cancelSlot = cancelSlot;
+const BookSlot = async (event) => {
+    try {
+        const checkAuthStart = Date.now();
+        const checkAuth = await (0, auth_1.tokenValidation)(event);
+        console.log(`[PERF] tokenValidation took ${Date.now() - checkAuthStart}ms`);
+        if (checkAuth !== 1) {
+            return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid token");
+        }
+        const connectDbStart = Date.now();
+        const DB = await (0, exports.connectToDb)();
+        console.log(`[PERF] connectToDb took ${Date.now() - connectDbStart}ms`);
+        const body = typeof event.body == "string" ? JSON.parse(event.body) : event.body;
+        const { mobile, doseType, slotId } = body;
+        const validateStart = Date.now();
+        const validateUserData = SlotSchemaValidator_1.slotBookingValidator.validate(body);
+        console.log(`[PERF] slotBookingValidator took ${Date.now() - validateStart}ms`);
+        if (validateUserData.error) {
+            return (0, responseFormat_1.ResponseFormat)(400, "Format Error", validateUserData.error);
+        }
+        const findUserStart = Date.now();
+        const existingUser = await DB.userDb?.findOne({ mobile });
+        console.log(`[PERF] DB.userDb?.findOne({ mobile }) took ${Date.now() - findUserStart}ms`);
+        if (!existingUser) {
+            return (0, responseFormat_1.ResponseFormat)(400, "User not found");
+        }
+        if (doseType == UserModel_1.DoseType.Two && existingUser.vaccinationStatus !== UserModel_1.VaccinationStatus.FirstDose) {
+            return (0, responseFormat_1.ResponseFormat)(400, "Cannot book 2nd dose before completing 1st dose");
+        }
+        const objectId = new mongodb_1.ObjectId(slotId);
+        const findSlotStart = Date.now();
+        const existingSlotId = await DB.slotDb?.findOne({ _id: objectId });
+        console.log(`[PERF] DB.slotDb?.findOne({ _id: objectId }) took ${Date.now() - findSlotStart}ms`);
+        console.log(existingSlotId);
+        if (!existingSlotId) {
+            return (0, responseFormat_1.ResponseFormat)(400, "Slot Id not found");
+        }
+        if (existingSlotId.availableCapacity <= 0) {
+            return (0, responseFormat_1.ResponseFormat)(400, "Slots are full for this id", existingSlotId._id);
+        }
+        let vaccineStatus = doseType === UserModel_1.DoseType.One
+            ? UserModel_1.VaccinationStatus.FirstDose
+            : UserModel_1.VaccinationStatus.AllDose;
+        const updateSlotStart = Date.now();
+        await DB.slotDb?.updateOne({ _id: existingSlotId._id }, {
+            $inc: {
+                "availableCapacity": -1,
+                "bookedCount": +1
+            }
+        });
+        console.log(`[PERF] DB.slotDb?.updateOne took ${Date.now() - updateSlotStart}ms`);
+        const updateUserStart = Date.now();
+        await DB.userDb?.updateOne({ mobile: mobile }, {
+            $set: {
+                "bookedSlot": existingSlotId._id,
+                "vaccinationStatus": vaccineStatus
+            },
+            $push: {
+                doseHistory: {
+                    dose: doseType,
+                    slotId: existingSlotId._id,
+                    date: new Date()
+                }
+            }
+        });
+        console.log(`[PERF] DB.userDb?.updateOne took ${Date.now() - updateUserStart}ms`);
+        return (0, responseFormat_1.ResponseFormat)(200, `Dose ${doseType} slot booked successfully for slot ${existingSlotId._id}`);
+    }
+    catch (error) {
+        console.log(error);
+        return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
+    }
+};
+exports.BookSlot = BookSlot;

@@ -48,7 +48,7 @@ functions:
     events:
       - http:
           path: /getProfile
-          method: post
+          method: get
             
   # bookSlot:
   #   handler: dist/controllers/UserController.bookSlot

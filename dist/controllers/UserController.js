@@ -3,10 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bookSlot = exports.getProfile = exports.loginUser = exports.registerUser = exports.init = void 0;
+exports.getProfile = exports.loginUser = exports.registerUser = exports.init = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const mongodb_1 = require("mongodb");
 const UserModel_1 = require("../models/UserModel");
 const MongoClient_1 = require("../dbConnection/MongoClient");
 const UserSchemaValidator_1 = require("../validator/UserSchemaValidator");
@@ -135,41 +134,20 @@ const loginUser = async (event) => {
 exports.loginUser = loginUser;
 const getProfile = async (event) => {
     try {
-        // const token = event.headers.Authorization?.split(" ")[1];
-        // console.log("Token in profile api", token);
-        // if (!token) {
-        //     return ResponseFormat(401, "Unauthorized: No token provided");
-        // }
-        const subid = await (0, auth_1.checkTokenPresent)(event);
-        console.log("Sub ID from token payload:", subid);
-        const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-        const { mobile } = body;
+        const checkAuth = await (0, auth_1.tokenValidation)(event);
+        const token = event.headers.Authorization?.split(" ")[1];
+        if (checkAuth !== 1) {
+            return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid token");
+        }
+        const payload = await auth_1.verifier.verify(token);
+        const payLoadSubId = payload.sub;
         const db = await (0, MongoClient_1.dbConnect)();
-        // const payload = await verifier.verify(token);
-        // console.log("Payload in profile api", payload);
-        // if (!payload) {
-        //     return ResponseFormat(401, "Unauthorized: Invalid token");
-        // }
-        // const subid = payload.sub;
-        const userSub = await db.findOne({ mobile });
-        console.log("User sub from token payload:", userSub?.subId);
-        const validateProfile = UserSchemaValidator_1.profileValidator.validate(body);
-        console.log(validateProfile);
-        if (validateProfile.error) {
-            return (0, responseFormat_1.ResponseFormat)(400, "Validation Format error", validateProfile.error.message);
-        }
-        const userProfile = await db.findOne({ mobile });
-        if (!userProfile) {
-            console.log("User not exists in db");
-            return (0, responseFormat_1.ResponseFormat)(400, "User not found with this mobile number");
-        }
-        if (subid !== userSub?.subId) {
-            return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid token for this user");
-        }
+        const dbSubId = await db.findOne({ "subId": payLoadSubId });
+        console.log("User sub from token payload:", dbSubId?.subId);
         return (0, responseFormat_1.ResponseFormat)(200, "Profile Information", {
-            _id: userProfile?._id,
-            name: userProfile?.name,
-            mobile: userProfile?.mobile,
+            _id: dbSubId?._id,
+            name: dbSubId?.name,
+            mobile: dbSubId?.mobile,
         });
     }
     catch (error) {
@@ -178,36 +156,3 @@ const getProfile = async (event) => {
     }
 };
 exports.getProfile = getProfile;
-const bookSlot = async (event) => {
-    try {
-        const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-        const { slotId } = body;
-        const db = await (0, MongoClient_1.slotdbConnect)();
-        console.log("SlotId", slotId);
-        const objectId = new mongodb_1.ObjectId(slotId);
-        console.log("ObjectId", objectId);
-        const validateSlotId = UserSchemaValidator_1.slotValidator.validate(body);
-        if (validateSlotId.error) {
-            return (0, responseFormat_1.ResponseFormat)(400, "Validation Format error", validateSlotId.error.message);
-        }
-        const checkSLotId = await db?.findOne({ _id: objectId });
-        console.log("checkSLotId", checkSLotId);
-        if (!checkSLotId) {
-            console.log("Slot id is not present in db");
-            return (0, responseFormat_1.ResponseFormat)(400, "slot id not exist in db");
-        }
-        await db?.updateOne({
-            _id: objectId
-        }, {
-            $inc: {
-                "availableCapacity": -1
-            }
-        });
-        return (0, responseFormat_1.ResponseFormat)(200, "Slot Booked");
-    }
-    catch (error) {
-        console.log("Error in bookSlot api", error);
-        return (0, responseFormat_1.ResponseFormat)(400, "Internal Server Error", error);
-    }
-};
-exports.bookSlot = bookSlot;

@@ -1,24 +1,34 @@
 import { MongoClient } from "mongodb";
-const client=new MongoClient("mongodb+srv://jaganpatra_db_user:Patra123@cluster0.twvcjqe.mongodb.net/?appName=Cluster0");
-export const dbConnect=async()=>{
+const client = new MongoClient("mongodb+srv://jaganpatra_db_user:Patra123@cluster0.twvcjqe.mongodb.net/?appName=Cluster0");
+let cachedClient: MongoClient | null = null;
+const getClient = async () => {
+    if (cachedClient) {
+        return cachedClient;
+    }
+    cachedClient = client;
+    return cachedClient;
+}
+export const dbConnect = async () => {
     try {
-        await client.connect();
-        const myDB=client.db("VaccineDatabase");
-        const vaccineData=myDB.collection("VaccinePortal");
+        const checkAuthStart = Date.now();
+        await getClient();
+        console.log(`[PERF] dbConnect time taken took ${Date.now() - checkAuthStart}ms`);
+        const userDB = client.db("VaccineDatabase").collection("VaccinePortal");
+        // const vaccineData = myDB.collection("VaccinePortal");
         console.log("DB Connected Successfully");
-        return vaccineData;
+        return userDB;
     } catch (error) {
-        console.log("Error in DB Connection",error);
+        console.log("Error in DB Connection", error);
     }
 }
-export const slotdbConnect=async()=>{
+export const slotdbConnect = async () => {
     try {
-        await client.connect();
-        const myDB=client.db("VaccineDatabase");
-        const slotData=myDB.collection("slots");
+        await getClient();
+        const slotDB = client.db("VaccineDatabase").collection("slots");
+        // const slotData = myDB.collection("slots");
         console.log("DB Connected Successfully");
-        return slotData;
+        return slotDB;
     } catch (error) {
-        console.log("Error in DB Connection",error);
+        console.log("Error in DB Connection", error);
     }
 }

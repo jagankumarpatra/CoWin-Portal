@@ -1,20 +1,28 @@
-import dotenv from "dotenv";
-dotenv.config();
 import { Search } from "../models/searchModel";
 import { ResponseFormat } from "../utils/responseFormat";
 import { slotdbConnect, dbConnect } from "../dbConnection/MongoClient";
 import { addSlotValidate, filteredData } from "../validator/AdminSchemaValidator";
+import { tokenValidation } from "../middleware/auth";
+export const connectToDb = async () => {
+    const slotDb = await slotdbConnect();
+    const userDb = await dbConnect();
+    return { slotDb, userDb }
+}
 export const addSlot = async (event: any) => {
     try {
+        const checkAuth = await tokenValidation(event);
+        if (checkAuth !== 1) {
+            return ResponseFormat(401, "Unauthorized: Invalid token");
+        }
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
         const { date, time, availableCapacity } = body;
-        const db = await slotdbConnect();
         const sloValidate = addSlotValidate.validate(body);
         console.log(sloValidate);
         if (sloValidate.error) {
             return ResponseFormat(400, "Format error", sloValidate.error.message)
         }
-        const slot = await db?.insertOne({ date, time, availableCapacity });
+        const DB = await connectToDb();
+        const slot = await DB.slotDb?.insertOne({ date, time, availableCapacity });
         return ResponseFormat(200, "Slot added successfully", slot)
 
     } catch (error) {
@@ -22,10 +30,14 @@ export const addSlot = async (event: any) => {
     }
 }
 
-export const getSlots = async () => {
+export const getSlots = async (event: any) => {
     try {
-        const db = await slotdbConnect();
-        const slotData = await db?.find().toArray();
+        const checkAuth = await tokenValidation(event);
+        if (checkAuth !== 1) {
+            return ResponseFormat(401, "Unauthorized: Invalid token");
+        }
+        const DB = await connectToDb();
+        const slotData = await DB.slotDb?.find().toArray();
         return ResponseFormat(200, "All slots found", slotData);
     } catch (error) {
         console.log(error);
@@ -33,10 +45,15 @@ export const getSlots = async () => {
     }
 }
 
-export const getAllBookings = async () => {
+export const getAllBookings = async (event:any) => {
     try {
-        const db = await dbConnect();
-        const bookingsData = await db?.find({ bookedSlot: { $ne: null } }).toArray();
+        const checkAuth = await tokenValidation(event);
+        if (checkAuth !== 1) {
+            return ResponseFormat(401, "Unauthorized: Invalid token");
+        }
+        const DB = await connectToDb();
+        
+        const bookingsData = await DB.userDb?.find({ bookedSlot: { $ne: null } }).toArray();
         console.log(bookingsData);
         return ResponseFormat(200, "All bookings found", bookingsData);
 
@@ -47,30 +64,34 @@ export const getAllBookings = async () => {
 
 export const getFilteredData = async (event: any) => {
     try {
+         const checkAuth = await tokenValidation(event);
+        if (checkAuth !== 1) {
+            return ResponseFormat(401, "Unauthorized: Invalid token");
+        }
+        const DB = await connectToDb();
         const age = event.queryStringParameters?.age;
         const pincode = event.queryStringParameters?.pincode;
         const vaccinationStatus = event.queryStringParameters?.vaccinationStatus;
         console.log(age);
         console.log(pincode);
         console.log(vaccinationStatus);
-        const db = await dbConnect();
         let query: Search = { age, pincode, vaccinationStatus };
         const filterData = filteredData.validate(query);
         if (filterData.error) {
             return ResponseFormat(400, "Format error", filterData.error.message)
         }
         console.log(filterData.error);
-        let finalquery:Search={};
-        if(filterData.value.age!==undefined){
-            finalquery.age=filterData.value.age;
+        let finalquery: Search = {};
+        if (filterData.value.age !== undefined) {
+            finalquery.age = filterData.value.age;
         }
-         if(filterData.value.pincode!==undefined){
-            finalquery.pincode=filterData.value.pincode;
+        if (filterData.value.pincode !== undefined) {
+            finalquery.pincode = filterData.value.pincode;
         }
-         if(filterData.value.vaccinationStatus!==undefined){
-            finalquery.vaccinationStatus=filterData.value.vaccinationStatus;
+        if (filterData.value.vaccinationStatus !== undefined) {
+            finalquery.vaccinationStatus = filterData.value.vaccinationStatus;
         }
-        const data = await db?.find(finalquery).toArray();
+        const data = await DB.userDb?.find(finalquery).toArray();
         console.log(data);
 
         return ResponseFormat(200, "All filtered data found", data);
