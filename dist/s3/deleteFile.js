@@ -13,12 +13,14 @@ const deleteFile = async (event) => {
     try {
         const filename = event.queryStringParameters?.filename;
         console.log("Filename:", filename);
-        const storeData = new client_s3_1.DeleteObjectCommand({
-            Bucket: process.env.BUCKET_NAME,
-            Key: filename,
-        });
-        const info = await s3Client.send(storeData);
-        console.log("Deleting data from S3:", info);
+        // const storeData = new DeleteObjectCommand(
+        //     {
+        //         Bucket: process.env.BUCKET_NAME,
+        //         Key: filename,
+        //     }
+        // );
+        // const info=await s3Client.send(storeData);
+        // console.log("Deleting data from S3:", info);
         const allData = new client_s3_1.ListObjectsCommand({
             Bucket: process.env.BUCKET_NAME
         });
