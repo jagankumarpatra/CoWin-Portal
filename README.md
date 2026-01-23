@@ -1,5 +1,5 @@
 <!--
-title: 'AWS Simple HTTP Endpoint example in NodeJS.'
+title: 'AWS Simple HTTP Endpoint example in NodeJS, TS.'
 description: 'This template demonstrates how to make a simple HTTP API with Node.js running on AWS Lambda and API Gateway using the Serverless Framework.'
 layout: Doc
 framework: v4
